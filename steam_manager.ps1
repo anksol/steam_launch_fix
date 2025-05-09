@@ -67,13 +67,13 @@ try {
     Write-Host "[INFO] Found Steam at: $steamPath"
     Write-Host "[1/5] Starting Steam..."
     
-    # Запуск Steam
+    # Launching Steam process
     $steamProcess = Start-Process -FilePath $steamPath -PassThru
     if (-not $steamProcess) {
         throw "Failed to start Steam process"
     }
 
-    # Ожидание процессов первой стадии
+    # Waiting for 3 SteamWebHelper processes
     Write-Host "[2/5] Waiting for $RequiredProcessesStage1 $ProcessName processes..."
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     while ((Get-Process -Name $ProcessName -ErrorAction SilentlyContinue).Count -lt $RequiredProcessesStage1) {
@@ -83,7 +83,7 @@ try {
         Start-Sleep -Milliseconds $CheckIntervalMs
     }
 
-    # Приостановка Steam
+    # Suspending Steam process
     Write-Host "[3/5] Suspending Steam..."
     $code = @'
     using System;
@@ -98,7 +98,7 @@ try {
     Add-Type -TypeDefinition $code -ErrorAction Stop
     [PUtil]::NtSuspendProcess($steamProcess.Handle) | Out-Null
 
-    # Ожидание процессов второй стадии
+    # Waiting for fourth SteamWebHelper process
     Write-Host "[4/5] Waiting for $RequiredProcessesStage2 $ProcessName..."
     $stopwatch.Restart()
     while ((Get-Process -Name $ProcessName -ErrorAction SilentlyContinue).Count -lt $RequiredProcessesStage2) {
@@ -109,7 +109,7 @@ try {
         Start-Sleep -Milliseconds $CheckIntervalMs
     }
 
-    # Возобновление работы Steam
+    # Resuming Steam process
     Write-Host "[5/5] Resuming Steam..."
     [PUtil]::NtResumeProcess($steamProcess.Handle) | Out-Null
     Write-Host "[SUCCESS] Operation completed!"
